@@ -1,24 +1,22 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Actuators;
 
 public class RollerAgent : Agent
 {
     Rigidbody rBody;
-
-    // Start is called before the first frame update
     void Start()
     {
         rBody = GetComponent<Rigidbody>();
     }
 
-
     public Transform Target;
+    float counter;
     public override void OnEpisodeBegin()
     {
+        counter = 30;
         // If the Agent fell, zero its momentum
         if (this.transform.localPosition.y < 0)
         {
@@ -28,9 +26,9 @@ public class RollerAgent : Agent
         }
 
         // Move the target to a new spot
-        Target.localPosition = new Vector3(Random.value * 8 - 4,
+        Target.localPosition = new Vector3(Random.value * 50 - 25,
                                            0.5f,
-                                           Random.value * 8 - 4);
+                                           Random.value * 50 - 25);
     }
 
     public override void CollectObservations(VectorSensor sensor)
@@ -46,12 +44,12 @@ public class RollerAgent : Agent
 
 
     public float forceMultiplier = 10;
-    public override void OnActionReceived(float[] actionBuffers)
+    public override void OnActionReceived(ActionBuffers actionBuffers)
     {
         // Actions, size = 2
         Vector3 controlSignal = Vector3.zero;
-        controlSignal.x = actionBuffers[0];
-        controlSignal.z = actionBuffers[1];
+        controlSignal.x = actionBuffers.ContinuousActions[0];
+        controlSignal.z = actionBuffers.ContinuousActions[1];
         rBody.AddForce(controlSignal * forceMultiplier);
 
         // Rewards
@@ -60,21 +58,33 @@ public class RollerAgent : Agent
         // Reached target
         if (distanceToTarget < 1.42f)
         {
-            SetReward(1.0f);
+            SetReward(2.0f);
+            EndEpisode();
+        }
+
+        if(counter <= 0)
+        {
+            SetReward(-1.0f);
             EndEpisode();
         }
 
         // Fell off platform
-        else if (this.transform.localPosition.y < 0)
+        if (this.transform.localPosition.y < 0)
         {
+            SetReward(-1.0f);
             EndEpisode();
         }
     }
 
-    public override void Heuristic(float[] actionsOut)
+    public override void Heuristic(in ActionBuffers actionsOut)
     {
-        var continuousActionsOut = actionsOut;
+        var continuousActionsOut = actionsOut.ContinuousActions;
         continuousActionsOut[0] = Input.GetAxis("Horizontal");
         continuousActionsOut[1] = Input.GetAxis("Vertical");
+    }
+
+    public void Update()
+    {
+        counter -= Time.deltaTime;
     }
 }
