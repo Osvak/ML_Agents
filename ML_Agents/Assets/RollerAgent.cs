@@ -81,11 +81,13 @@ public class RollerAgent : Agent
         // Rewards
         counter++;
 
-        if (rBody.velocity.x < 0.2f && rBody.velocity.z < 0.2f)
+        // If the ball stays still gets punished
+        if (rBody.velocity.x < 0.1f && rBody.velocity.z < 0.1f)
         {
             SetReward(-0.1f);
         }
 
+        // Timer to avoid the ball just trying to survive instead of reaching the goal
         if (counter >= 2000)
         {
             SetReward(-1.0f);
@@ -103,7 +105,7 @@ public class RollerAgent : Agent
 
     private void OnCollisionEnter(Collision collision)
     {
-        
+        // Collision check with Script Tagging
         if( collision.collider.TryGetComponent<Goal>(out Goal goal))
         {
             SetReward(+1.0f);
@@ -125,6 +127,7 @@ public class RollerAgent : Agent
 
     private void OnTriggerEnter(Collider other)
     {
+        // Same as OnCollisionEnter
         if(other.TryGetComponent<Checkpoint>(out Checkpoint checkpoint))
         {
             SetReward(+0.1f);
@@ -136,6 +139,7 @@ public class RollerAgent : Agent
 
     private void OnCollisionStay(Collision collision)
     {
+        // Punish the ball for staying in contact with the wall
         if(collision.collider.TryGetComponent<Wall>(out Wall wall))
         {
             SetReward(-0.8f);
